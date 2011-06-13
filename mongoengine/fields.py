@@ -39,17 +39,19 @@ class StringField(BaseField):
         return unicode(value)
 
     def validate(self, value):
-        assert isinstance(value, (str, unicode))
+        if value:
+            if self.max_length is not None and len(value) > self.max_length:
+                raise ValidationError('String value is too long')
 
-        if self.max_length is not None and len(value) > self.max_length:
-            raise ValidationError('String value is too long')
+            if self.min_length is not None and len(value) < self.min_length:
+                raise ValidationError('String value is too short')
 
-        if self.min_length is not None and len(value) < self.min_length:
-            raise ValidationError('String value is too short')
-
-        if self.regex is not None and self.regex.match(value) is None:
-            message = 'String value did not match validation regex'
-            raise ValidationError(message)
+            if self.regex is not None and self.regex.match(value) is None:
+                message = 'String value did not match validation regex'
+                raise ValidationError(message)
+        
+        elif value is None and self.required:
+            raise ValidationError('This field is required')
 
     def lookup_member(self, member_name):
         return None
