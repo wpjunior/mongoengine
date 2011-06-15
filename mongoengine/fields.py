@@ -112,7 +112,7 @@ class URLField(StringField):
                 try:
                     request = urllib2.Request(value)
                     response = urllib2.urlopen(request)
-               except Exception, e:
+                except Exception, e:
                     message = 'This URL appears to be a broken link: %s' % e
                     raise ValidationError(message)
 
