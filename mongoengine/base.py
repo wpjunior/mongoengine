@@ -67,7 +67,7 @@ class BaseField(object):
         self.choices = choices
         self.verbose_name = verbose_name
         self.help_text = help_text
-        
+
         # Adjust the appropriate creation counter, and save our local copy.
         if self.db_field == '_id':
             self.creation_counter = BaseField.auto_creation_counter
@@ -789,9 +789,9 @@ class BaseDocument(object):
         for field_name in self._fields:
             key = '%s.' % field_name
             field = getattr(self, field_name, None)
-            if isinstance(field, EmbeddedDocument):  # Grab all embedded fields that have been changed
+            if isinstance(field, EmbeddedDocument) and field_name not in _changed_fields:  # Grab all embedded fields that have been changed
                 _changed_fields += ["%s%s" % (key, k) for k in field._get_changed_fields(key) if k]
-            elif isinstance(field, (list, tuple)):  # Loop list fields as they contain documents
+            elif isinstance(field, (list, tuple)) and field_name not in _changed_fields:  # Loop list fields as they contain documents
                 for index, value in enumerate(field):
                     if not hasattr(value, '_get_changed_fields'):
                         continue
@@ -863,7 +863,7 @@ class BaseList(list):
     def __setitem__(self, *args, **kwargs):
         if hasattr(self, 'instance') and hasattr(self, 'name'):
             self.instance._mark_as_changed(self.name)
-        super(BaseDict, self).__setitem__(*args, **kwargs)
+        super(BaseList, self).__setitem__(*args, **kwargs)
 
     def __delitem__(self, *args, **kwargs):
         self.instance._mark_as_changed(self.name)
