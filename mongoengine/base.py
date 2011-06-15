@@ -123,11 +123,12 @@ class BaseField(object):
     def validate(self, value):
         """Perform validation on a value.
         """
-        pass
+        if value is None and self.required:
+            raise ValidationError('This field is required')
 
     def _validate(self, value):
         # check choices
-        if self.choices is not None and value:
+        if self.choices is not None and value is not None:
             option_keys = [option_key for option_key, option_value in self.choices]
             
             if value not in option_keys:
