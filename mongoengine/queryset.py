@@ -1489,7 +1489,8 @@ class QuerySet(object):
             if isinstance(key, float):
                 if int(key) == key:
                     key = int(key)
-                key = str(key)
+                else:
+                    key = str(key)
             frequencies[key] = f.value
 
         if normalize:
