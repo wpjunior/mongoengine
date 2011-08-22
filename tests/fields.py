@@ -1488,5 +1488,84 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(c['next'], 10)
 
 
+    def test_date_field(self):
+        class Person(Document):
+            name = StringField()
+            birth = DateField()
+
+        Person.drop_collection()
+
+        p1 = Person(name="Wilson P.",
+                    birth=datetime.date(1968, 10, 12))
+        p1.save()
+
+        self.assertEqual(p1.to_mongo()['birth'], '19681012')
+
+        p2 = Person(name="Wilson Jr.",
+                    birth=datetime.date(1992, 10, 27))
+        p2.save()
+        self.assertEqual(p2.to_mongo()['birth'], '19921027')
+    
+
+    def test_date_field_search(self):
+        class Person(Document):
+            name = StringField()
+            birth = DateField()
+
+            def __unicode__(self):
+                return self.name
+
+        Person.drop_collection()
+
+        p1 = Person(name="Wilson P.",
+                    birth=datetime.date(1968, 10, 12))
+        p1.save()
+
+        p2 = Person(name="Wilson Jr.",
+                    birth=datetime.date(1992, 10, 27))
+        p2.save()
+
+        p3 = Person(name="Eliana C.",
+                    birth=datetime.date(1974, 10, 24))
+        p3.save()
+
+        p4 = Person(name="Tayza M.",
+                    birth=datetime.date(1996, 9, 9))
+        p4.save()
+
+        p5 = Person(name="Domingos C. R",
+                    birth=datetime.date(1951, 8, 22))
+        p5.save()
+        
+        p6 = Person(name="Rosalia C. R",
+                    birth=datetime.date(1953, 11, 8))
+        p6.save()
+
+        self.assertEqual(list(Person.objects(birth__gte=datetime.date(1990, 2, 28),
+                                        birth__lte=datetime.date(1998, 2, 28))),
+                         [p2, p4])
+
+        self.assertEqual(list(Person.objects(birth__gte=datetime.date(1940, 10, 28),
+                                             birth__lte=datetime.date(1960, 2, 28))),
+                         [p5, p6])
+
+        self.assertEqual(list(Person.objects(birth__gte=datetime.date(1960, 10, 28),
+                                             birth__lte=datetime.date(1980, 2, 28))),
+                         [p1, p3])
+
+        self.assertEqual(list(Person.objects(birth__gte=datetime.date(1952, 10, 28),
+                                             birth__lte=datetime.date(1998, 2, 28))),
+                         [p1, p2, p3, p4, p6])
+
+        self.assertEqual(list(Person.objects(birth__gte=datetime.date(1965, 10, 28),
+                                             birth__lte=datetime.date(1998, 2, 28))),
+                         [p1, p2, p3, p4])
+
+        self.assertEqual(p1, Person.objects(birth=datetime.date(1968, 10, 12)).first())
+        self.assertEqual(p2, Person.objects(birth=datetime.date(1992, 10, 27)).first())
+
+        self.assertEqual([p5, p6, p1, p3, p2, p4], list(Person.objects.order_by('birth')))
+        self.assertEqual([p4, p2, p3, p1, p6, p5], list(Person.objects.order_by('-birth')))
+
 if __name__ == '__main__':
     unittest.main()

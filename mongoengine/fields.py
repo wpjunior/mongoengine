@@ -16,7 +16,8 @@ import gridfs
 
 
 __all__ = ['StringField', 'IntField', 'FloatField', 'BooleanField',
-           'DateTimeField', 'EmbeddedDocumentField', 'ListField', 'DictField',
+           'DateTimeField', 'DateField',
+           'EmbeddedDocumentField', 'ListField', 'DictField',
            'ObjectIdField', 'ReferenceField', 'ValidationError', 'MapField',
            'DecimalField', 'ComplexDateTimeField', 'URLField',
            'GenericReferenceField', 'FileField', 'BinaryField',
@@ -228,7 +229,29 @@ class BooleanField(BaseField):
     def validate(self, value):
         assert isinstance(value, bool)
 
+class DateField(BaseField):
+    def validate(self, value):
+        assert isinstance(value, datetime.date)
+        
+    def to_python(self, value):
+        return self._convert_from_string(value)
 
+    def to_mongo(self, value):
+        return self._convert_from_date(value)
+
+    def prepare_query_value(self, op, value):
+        return self._convert_from_date(value)
+
+    def _convert_from_date(self, val):
+        return val.strftime('%Y%m%d')
+
+    def _convert_from_string(self, data):
+        year = int(data[:4])
+        month = int(data[4:6])
+        day = int(data[6:8])
+
+        return datetime.date(year, month, day)
+        
 class DateTimeField(BaseField):
     """A datetime field.
 
