@@ -8,9 +8,11 @@ import queryset
 from queryset import *
 import signals
 from signals import *
+import serializers
+from serializers import *
 
 __all__ = (document.__all__ + fields.__all__ + connection.__all__ +
-           queryset.__all__ + signals.__all__)
+           queryset.__all__ + signals.__all__ + serializers.__all__)
 
 __author__ = 'Harry Marr'
 

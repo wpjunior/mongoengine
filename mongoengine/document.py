@@ -91,10 +91,12 @@ class Document(BaseDocument):
                 max_documents = self._meta['max_documents']
 
                 if collection_name in db.collection_names():
+
                     self._collection = db[collection_name]
                     # The collection already exists, check if its capped
                     # options match the specified capped options
                     options = self._collection.options()
+
                     if options.get('max') != max_documents or \
                        options.get('size') != max_size:
                         msg = ('Cannot create collection "%s" as a capped '
