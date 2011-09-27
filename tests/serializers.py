@@ -22,5 +22,5 @@ class SerializersTest(unittest.TestCase):
         self.assertRaises(serializers.SerializerNotFound,
                           raising)
 
-        data = serializers.serialize("json",
+        data = serializers.serialize("python",
                                      Person.objects.all())
