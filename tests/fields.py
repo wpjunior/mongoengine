@@ -1,5 +1,6 @@
 import unittest
 import datetime
+import os
 from decimal import Decimal
 
 import pymongo
@@ -9,6 +10,9 @@ from mongoengine import *
 from mongoengine.connection import _get_db
 from mongoengine.base import _document_registry, NotRegistered
 
+TEST_IMAGE_PATH = os.path.join(
+    os.path.dirname(__file__),
+    'testimage.png')
 
 class FieldTest(unittest.TestCase):
 
@@ -1327,6 +1331,22 @@ class FieldTest(unittest.TestCase):
         self.assertTrue(bool(testfile.file))
 
         TestFile.drop_collection()
+
+    def test_image_field(self):
+        import os
+        
+        class TestImage(Document):
+            image = ImageField()
+
+        f_obj = open(TEST_IMAGE_PATH, 'r')
+
+        t = TestImage()
+        t.image.put(f_obj)
+        t.save()
+
+        t = TestImage.objects.first()
+        self.assertEquals(t.image.width, 1280)
+        self.assertEquals(t.image.height, 1024)
 
     def test_geo_indexes(self):
         """Ensure that indexes are created automatically for GeoPointFields.

@@ -19,8 +19,8 @@ __all__ = ['StringField', 'IntField', 'FloatField', 'BooleanField',
            'DateTimeField', 'EmbeddedDocumentField', 'ListField', 'DictField',
            'ObjectIdField', 'ReferenceField', 'ValidationError', 'MapField',
            'DecimalField', 'ComplexDateTimeField', 'URLField',
-           'GenericReferenceField', 'FileField', 'BinaryField',
-           'SortedListField', 'EmailField', 'GeoPointField',
+           'GenericReferenceField', 'FileField', 'ImageField',
+           'BinaryField', 'SortedListField', 'EmailField', 'GeoPointField',
            'SequenceField', 'GenericEmbeddedDocumentField']
 
 RECURSIVE_REFERENCE_CONSTANT = 'self'
@@ -841,6 +841,7 @@ class FileField(BaseField):
     .. versionadded:: 0.4
     .. versionchanged:: 0.5 added optional size param for read
     """
+    proxy_class = GridFSProxy
 
     def __init__(self, **kwargs):
         super(FileField, self).__init__(**kwargs)
@@ -852,12 +853,12 @@ class FileField(BaseField):
         # Check if a file already exists for this model
         grid_file = instance._data.get(self.name)
         self.grid_file = grid_file
-        if isinstance(self.grid_file, GridFSProxy):
+        if isinstance(self.grid_file, self.proxy_class):
             if not self.grid_file.key:
                 self.grid_file.key = self.name
                 self.grid_file.instance = instance
             return self.grid_file
-        return GridFSProxy(key=self.name, instance=instance)
+        return self.proxy_class(key=self.name, instance=instance)
 
     def __set__(self, instance, value):
         key = self.name
@@ -874,7 +875,7 @@ class FileField(BaseField):
                 grid_file.put(value)
             else:
                 # Create a new proxy object as we don't already have one
-                instance._data[key] = GridFSProxy(key=key, instance=instance)
+                instance._data[key] = self.proxy_class(key=key, instance=instance)
                 instance._data[key].put(value)
         else:
             instance._data[key] = value
@@ -883,18 +884,57 @@ class FileField(BaseField):
 
     def to_mongo(self, value):
         # Store the GridFS file id in MongoDB
-        if isinstance(value, GridFSProxy) and value.grid_id is not None:
+        if isinstance(value, self.proxy_class) and value.grid_id is not None:
             return value.grid_id
         return None
 
     def to_python(self, value):
         if value is not None:
-            return GridFSProxy(value)
+            return self.proxy_class(value)
 
     def validate(self, value):
         if value.grid_id is not None:
-            assert isinstance(value, GridFSProxy)
+            assert isinstance(value, self.proxy_class)
             assert isinstance(value.grid_id, pymongo.objectid.ObjectId)
+
+
+class ImageGridFsProxy(GridFSProxy):
+    def __init__(self, *args, **kwargs):
+        super(ImageGridFsProxy, self).__init__(*args, **kwargs)
+
+    def put(self, file_obj, **kwargs):
+        field = self.instance._fields[self.key]
+        if field.size:
+            file_obj = self.resize_file(file_obj)
+
+        w, h = self.get_dimentions(file_obj)
+
+        return super(ImageGridFsProxy, self).put(file_obj, **kwargs)
+
+    @classmethod
+    def get_dimentions(self, file_obj):
+        raise NotImplementedError
+    
+    @classmethod
+    def resize_file(self, file_obj, size):
+        raise NotImplementedError
+
+    @property
+    def height(self):
+        raise NotImplementedError
+
+    @property
+    def width(self):
+        raise NotImplementedError
+
+class ImageField(FileField):
+    proxy_class = ImageGridFsProxy
+
+    def __init__(self, size=None, thumbnail_size=None, **kwargs):
+        self.size = size
+        self.thumbnail_size = thumbnail_size
+
+        super(ImageField, self).__init__(**kwargs)
 
 
 class GeoPointField(BaseField):
