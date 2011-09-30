@@ -1338,15 +1338,63 @@ class FieldTest(unittest.TestCase):
         class TestImage(Document):
             image = ImageField()
 
-        f_obj = open(TEST_IMAGE_PATH, 'r')
+        TestImage.drop_collection()
 
         t = TestImage()
-        t.image.put(f_obj)
+        t.image.put(open(TEST_IMAGE_PATH, 'r'))
         t.save()
 
         t = TestImage.objects.first()
-        self.assertEquals(t.image.width, 1280)
-        self.assertEquals(t.image.height, 1024)
+        
+        self.assertEquals(t.image.format, 'PNG')
+        
+        w, h = t.image.size
+        self.assertEquals(w, 1280)
+        self.assertEquals(h, 1024)
+
+        t.image.delete()
+
+    def test_image_field_resize(self):
+        import os
+        
+        class TestImage(Document):
+            image = ImageField(size=(750, 600))
+
+        TestImage.drop_collection()
+
+        t = TestImage()
+        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        t.save()
+
+        t = TestImage.objects.first()
+        
+        self.assertEquals(t.image.format, 'PNG')
+        w, h = t.image.size
+        
+        self.assertEquals(w, 750)
+        self.assertEquals(h, 600)
+
+        t.image.delete()
+
+    def test_image_field_thumbnail(self):
+        import os
+        
+        class TestImage(Document):
+            image = ImageField(thumbnail_size=(128, 102))
+
+        TestImage.drop_collection()
+
+        t = TestImage()
+        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        t.save()
+
+        t = TestImage.objects.first()
+        
+        self.assertEquals(t.image.thumbnail.format, 'PNG')
+        self.assertEquals(t.image.thumbnail.width, 128)
+        self.assertEquals(t.image.thumbnail.height, 102)
+
+        t.image.delete()
 
     def test_geo_indexes(self):
         """Ensure that indexes are created automatically for GeoPointFields.
