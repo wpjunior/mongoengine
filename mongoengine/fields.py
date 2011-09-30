@@ -921,7 +921,8 @@ class ImageGridFsProxy(GridFSProxy):
         except:
             raise ValidationError('Invalid image')
 
-        if field.size:
+        if (field.size and (img.size[0] > field.size['width'] or
+                            img.size[1] > field.size['height'])):
             size = field.size
 
             if size['force']:
