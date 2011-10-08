@@ -757,6 +757,7 @@ class GridFSProxy(object):
 
     .. versionadded:: 0.4
     .. versionchanged:: 0.5 - added optional size param to read
+    .. versionchanged:: 0.6 - added collection name param
     """
 
     def __init__(self, grid_id=None, key=None,
@@ -913,7 +914,16 @@ class FileField(BaseField):
             assert isinstance(value.grid_id, pymongo.objectid.ObjectId)
 
 class ImageGridFsProxy(GridFSProxy):
+    """
+    Proxy for ImageField
+
+    versionadded: 0.6
+    """
     def put(self, file_obj, **kwargs):
+        """
+        Insert a image in database
+        applying field properties (size, thumbnail_size)
+        """
         field = self.instance._fields[self.key]
 
         try:
@@ -951,7 +961,7 @@ class ImageGridFsProxy(GridFSProxy):
                                     Image.ANTIALIAS)
             
         if thumbnail:
-            thumb_id = self.put_thumbnail(thumbnail,
+            thumb_id = self._put_thumbnail(thumbnail,
                                           img.format)
         else:
             thumb_id = None
@@ -977,7 +987,7 @@ class ImageGridFsProxy(GridFSProxy):
 
         return super(ImageGridFsProxy, self).delete(*args, **kwargs)
 
-    def put_thumbnail(self, thumbnail, format, **kwargs):
+    def _put_thumbnail(self, thumbnail, format, **kwargs):
         w, h = thumbnail.size
 
         io = StringIO()
@@ -990,23 +1000,52 @@ class ImageGridFsProxy(GridFSProxy):
                            **kwargs)
     @property
     def size(self):
+        """
+        return a width, height of image
+        """
         out = self.get()
         if out:
             return out.width, out.height
 
     @property
     def format(self):
+        """
+        return format of image
+        ex: PNG, JPEG, GIF, etc
+        """
         out = self.get()
         if out:
             return out.format
 
     @property
     def thumbnail(self):
+        """
+        return a gridfs.grid_file.GridOut
+        representing a thumbnail of Image
+        """
         out = self.get()
         if out and out.thumbnail_id:
             return self.fs.get(out.thumbnail_id)
 
+    def write(self, *args, **kwargs):
+        raise RuntimeError("Please use \"put\" method instead")
+
+    def writelines(self, *args, **kwargs):
+        raise RuntimeError("Please use \"put\" method instead")
+
 class ImageField(FileField):
+    """
+    A Image File storage field.
+
+    @size (width, height, force):
+        max size to store images, if larger will be automatically resized
+        ex: size=(800, 600, True)
+
+    @thumbnail (width, height, force):
+        size to generate a thumbnail
+
+    .. versionadded:: 0.6
+    """
     proxy_class = ImageGridFsProxy
 
     def __init__(self, size=None, thumbnail_size=None,
