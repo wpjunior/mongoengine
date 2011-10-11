@@ -1317,6 +1317,32 @@ class FieldTest(unittest.TestCase):
 
         TestFile.drop_collection()
 
+    def test_file_multidb(self):
+        class TestFile(Document):
+            name = StringField()
+            file = FileField(db_name="testfiles",
+                             collection_name="macumba")
+
+        TestFile.drop_collection()
+
+        # delete old filesystem
+        _get_db(db_name="testfiles").macumba.files.drop()
+        _get_db(db_name="testfiles").macumba.chunks.drop()
+
+        # First instance
+        testfile = TestFile()
+        testfile.name = "Hello, World!"
+        testfile.file.put('Hello, World!',
+                          name="hello.txt")
+        testfile.save()
+
+        data = _get_db(db_name="testfiles").macumba.files.find_one()
+        self.assertEquals(data.get('name'), 'hello.txt')
+
+        testfile = TestFile.objects.first()
+        self.assertEquals(testfile.file.read(),
+                          'Hello, World!')
+
     def test_file_boolean(self):
         """Ensure that a boolean test of a FileField indicates its presence
         """
