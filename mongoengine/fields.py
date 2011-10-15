@@ -758,16 +758,11 @@ class GridFSProxy(object):
     .. versionadded:: 0.4
     .. versionchanged:: 0.5 - added optional size param to read
     .. versionchanged:: 0.6 - added collection name param
-    .. versionchanged:: 0.6 - added multidb support
     """
 
     def __init__(self, grid_id=None, key=None,
-                 instance=None, db_name=None,
-                 collection_name='fs'):
-
-        self.fs = gridfs.GridFS(_get_db(db_name=db_name),
-                                collection_name)  # Filesystem instance
-
+                 instance=None, collection_name='fs'):
+        self.fs = gridfs.GridFS(_get_db(), collection_name)  # Filesystem instance
         self.newfile = None                 # Used for partial writes
         self.grid_id = grid_id              # Store GridFS id for file
         self.gridout = None
@@ -857,14 +852,12 @@ class FileField(BaseField):
 
     .. versionadded:: 0.4
     .. versionchanged:: 0.5 added optional size param for read
-    .. versionchanged:: 0.6 added multidb support
     """
     proxy_class = GridFSProxy
 
-    def __init__(self, db_name=None, collection_name="fs", **kwargs):
+    def __init__(self, collection_name="fs", **kwargs):
         super(FileField, self).__init__(**kwargs)
         self.collection_name = collection_name
-        self.db_name = db_name
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -879,8 +872,7 @@ class FileField(BaseField):
                 self.grid_file.instance = instance
             return self.grid_file
         return self.proxy_class(key=self.name, instance=instance,
-                                collection_name=self.collection_name,
-                                db_name=self.db_name)
+                                collection_name=self.collection_name)
 
     def __set__(self, instance, value):
         key = self.name
@@ -897,10 +889,8 @@ class FileField(BaseField):
                 grid_file.put(value)
             else:
                 # Create a new proxy object as we don't already have one
-                instance._data[key] = self.proxy_class(
-                    key=key, instance=instance,
-                    collection_name=self.collection_name,
-                    db_name=self.db_name)
+                instance._data[key] = self.proxy_class(key=key, instance=instance,
+                                                       collection_name=self.collection_name)
                 instance._data[key].put(value)
         else:
             instance._data[key] = value
@@ -916,8 +906,7 @@ class FileField(BaseField):
     def to_python(self, value):
         if value is not None:
             return self.proxy_class(value,
-                                    collection_name=self.collection_name,
-                                    db_name=self.db_name)
+                                    collection_name=self.collection_name)
 
     def validate(self, value):
         if value.grid_id is not None:

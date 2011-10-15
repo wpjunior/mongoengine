@@ -11,7 +11,6 @@ _connection_defaults = {
 }
 _connection = {}
 _connection_settings = _connection_defaults.copy()
-_databases = {}
 
 _db_name = None
 _db_username = None
@@ -36,34 +35,16 @@ def _get_connection(reconnect=False):
             raise ConnectionError("Cannot connect to the database:\n%s" % e)
     return _connection[identity]
 
-def _get_db(db_name=None, reconnect=False):
+def _get_db(reconnect=False):
     """Handles database connections and authentication based on the current
     identity
-
-    db_name: if None use default database used in connect
     """
-    global _db, _connection, _databases
+    global _db, _connection
     identity = get_identity()
-
     # Connect if not already connected
     if _connection.get(identity) is None or reconnect:
         _connection[identity] = _get_connection(reconnect=reconnect)
 
-    # alternative database
-    if db_name:
-        if _databases.get(db_name) is None:
-            _databases[db_name] = {}
-
-        if _databases[db_name].get(identity) is None or reconnect:
-            _databases[db_name][identity] = _connection[identity][db_name]
-    
-            if _db_username and _db_password:
-                _databases[db_name][identity].authenticate(
-                    _db_username, _db_password)
-
-        return _databases[db_name][identity]
-
-    # default database
     if _db.get(identity) is None or reconnect:
         # _db_name will be None if the user hasn't called connect()
         if _db_name is None:
