@@ -1730,7 +1730,7 @@ class QuerySet(object):
                     field.forEach(function(item) {
                         emit(item, 1);
                     });
-                } else if (field) {
+                } else if (field != undefined) {
                     emit(field, 1);
                 } else {
                     emit(null, 1);
