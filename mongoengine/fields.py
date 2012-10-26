@@ -1356,6 +1356,17 @@ class SequenceField(IntField):
                                              upsert=True)
         return counter['next']
 
+    def set_next_value(self, value):
+        sequence_name = self.sequence_name or self.owner_document._get_collection_name()
+        sequence_id = "%s.%s" % (sequence_name, self.name)
+        collection = get_db(alias=self.db_alias)[self.collection_name]
+
+        counter = collection.find_and_modify(query={"_id": sequence_id},
+                                             update={"$set": {"next": value}},
+                                             new=True,
+                                             upsert=True)
+        return counter['next']
+
     def __get__(self, instance, owner):
 
         if instance is None:
